@@ -4,6 +4,9 @@ import { inferProcedureInput } from '@trpc/server';
 import Link from 'next/link';
 import { Fragment } from 'react';
 import type { AppRouter } from '~/server/routers/_app';
+import { machine, PostsContext } from '../components/postMachine';
+
+const PostsProvider = PostsContext.Provider;
 
 const IndexPage: NextPageWithLayout = () => {
   const utils = trpc.useContext();
@@ -34,7 +37,24 @@ const IndexPage: NextPageWithLayout = () => {
   // }, [postsQuery.data, utils]);
 
   return (
-    <>
+    <PostsProvider
+      // REPRO: why is this causing a type error?
+      machine={() =>
+        machine
+          .withContext({
+            facilityId: '123',
+          })
+          .withConfig({
+            services: {
+              getPosts: async (context, event) => {
+                const results = await utils.client.post.list.query({});
+
+                return results;
+              },
+            },
+          })
+      }
+    >
       <h1>Welcome to your tRPC starter!</h1>
       <p>
         If you get stuck, check <a href="https://trpc.io">the docs</a>, write a
@@ -124,7 +144,7 @@ const IndexPage: NextPageWithLayout = () => {
           <p style={{ color: 'red' }}>{addPost.error.message}</p>
         )}
       </form>
-    </>
+    </PostsProvider>
   );
 };
 
